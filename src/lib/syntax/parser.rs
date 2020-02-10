@@ -1,3 +1,4 @@
+use crate::builtins::value::from_value;
 use crate::syntax::ast::constant::Const;
 use crate::syntax::ast::expr::{Expr, ExprDef};
 use crate::syntax::ast::keyword::Keyword;
@@ -350,13 +351,25 @@ impl Parser {
     }
 
     /// Parse a single expression
+    pub fn parse_rest(&mut self) -> Expr {
+      let token = self.get_token(self.pos);
+      let data: Expr = match token {
+      Ok(t) => Expr::new(ExprDef::Local(t.data.to_string())),
+      _ => Expr::new(ExprDef::Local("nuttin".to_string()))
+      };
+
+      println!("data is {:?}", data);
+
+
+      self.pos +=1;
+      data
+    }
+
     pub fn parse(&mut self) -> ParseResult {
-        println!("run");
         if self.pos > self.tokens.len() {
             return Err(ParseError::AbruptEnd);
         }
         let token = self.get_token(self.pos)?;
-        println!("token is {}", token);
         self.pos += 1;
         let expr: Expr = match token.data {
             TokenData::Punctuator(Punctuator::Semicolon) | TokenData::Comment(_)
@@ -552,14 +565,6 @@ impl Parser {
                     || map.len() == 0
                 {
                     let tk = self.get_token(self.pos)?;
-                    let destructured_obj_content = match tk.data {
-                        TokenData::Punctuator(Punctuator::Spread) => {
-                            // HANDLE spread here
-                            Some(ExprDef::ArrayDecl(vec![]))
-                        }
-                        _ => None 
-                    };
-                    println!("tkdata {}", tk.data);
                     let name = match tk.data {
                         TokenData::Identifier(ref id) => id.clone(),
                         TokenData::StringLiteral(ref str) => str.clone(),
@@ -568,7 +573,7 @@ impl Parser {
                             break;
                         }
                         TokenData::Punctuator(Punctuator::Spread) => {
-                            "yolo".to_string()
+                            "rest".to_string()
                         }
                         _ => {
                             return Err(ParseError::Expected(
@@ -595,8 +600,7 @@ impl Parser {
                             Expr::new(ExprDef::FunctionDecl(None, args, Box::new(expr)))
                         }
                         _ if tk.data == TokenData::Punctuator(Punctuator::Spread) => {
-                            self.pos +=1;
-                            Expr::new(ExprDef::Local(String::from("test")))
+                            self.parse_rest()
                         }
                         _ => {
                             return Err(ParseError::Expected(
