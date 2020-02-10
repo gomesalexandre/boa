@@ -351,10 +351,12 @@ impl Parser {
 
     /// Parse a single expression
     pub fn parse(&mut self) -> ParseResult {
+        println!("run");
         if self.pos > self.tokens.len() {
             return Err(ParseError::AbruptEnd);
         }
         let token = self.get_token(self.pos)?;
+        println!("token is {}", token);
         self.pos += 1;
         let expr: Expr = match token.data {
             TokenData::Punctuator(Punctuator::Semicolon) | TokenData::Comment(_)
@@ -550,12 +552,23 @@ impl Parser {
                     || map.len() == 0
                 {
                     let tk = self.get_token(self.pos)?;
+                    let destructured_obj_content = match tk.data {
+                        TokenData::Punctuator(Punctuator::Spread) => {
+                            // HANDLE spread here
+                            Some(ExprDef::ArrayDecl(vec![]))
+                        }
+                        _ => None 
+                    };
+                    println!("tkdata {}", tk.data);
                     let name = match tk.data {
                         TokenData::Identifier(ref id) => id.clone(),
                         TokenData::StringLiteral(ref str) => str.clone(),
                         TokenData::Punctuator(Punctuator::CloseBlock) => {
                             self.pos += 1;
                             break;
+                        }
+                        TokenData::Punctuator(Punctuator::Spread) => {
+                            "yolo".to_string()
                         }
                         _ => {
                             return Err(ParseError::Expected(
@@ -580,6 +593,10 @@ impl Parser {
                             let expr = self.parse()?;
                             self.pos += 1;
                             Expr::new(ExprDef::FunctionDecl(None, args, Box::new(expr)))
+                        }
+                        _ if tk.data == TokenData::Punctuator(Punctuator::Spread) => {
+                            self.pos +=1;
+                            Expr::new(ExprDef::Local(String::from("test")))
                         }
                         _ => {
                             return Err(ParseError::Expected(

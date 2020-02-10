@@ -207,6 +207,7 @@ impl Executor for Interpreter {
                     .expect("Could not get the global object");
                 let obj = ValueData::new_obj(Some(global_val));
                 for (key, val) in map.iter() {
+                    println!("key val {} {}", key, val);
                     obj.borrow().set_field_slice(&key.clone(), self.run(val)?);
                 }
                 Ok(obj)
